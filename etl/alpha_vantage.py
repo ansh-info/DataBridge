@@ -1,7 +1,8 @@
-import requests
-import time
 import os
+import time
 from itertools import cycle
+
+import requests
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -35,3 +36,31 @@ def fetch_intraday_data(symbol="AAPL", interval="1min"):
     else:
         print("API Error:", response.status_code)
         return None
+
+
+from datetime import datetime
+
+from pyspark.sql import Row
+
+
+def parse_alpha_vantage_json(json_data, symbol, spark):
+    time_series = json_data.get("Time Series (1min)", {})
+
+    if not time_series:
+        raise ValueError("No 'Time Series (1min)' found")
+
+    rows = []
+    for timestamp_str, values in time_series.items():
+        row = Row(
+            symbol=symbol,
+            timestamp=datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S"),
+            open=float(values.get("1. open", 0)),
+            high=float(values.get("2. high", 0)),
+            low=float(values.get("3. low", 0)),
+            close=float(values.get("4. close", 0)),
+            volume=float(values.get("5. volume", 0)),
+        )
+        rows.append(row)
+
+    df = spark.createDataFrame(rows)
+    return df
