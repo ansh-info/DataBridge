@@ -179,3 +179,7 @@ target/
 dbt_packages/
 logs/
 # end dbt Cloud content
+
+
+# GCP credentials
+dbt-user-creds.json
