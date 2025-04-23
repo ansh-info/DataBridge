@@ -11,7 +11,10 @@ import urllib.request
 import urllib.parse
 import json
 # Simple .env loader (if python-dotenv is unavailable)
-env_path = os.path.join(os.path.dirname(__file__), '.env')
+# Locate the .env file in the project root (one directory above tests)
+env_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), os.pardir, '.env')
+)
 # Load .env variables manually
 if os.path.exists(env_path):
     with open(env_path) as f:
