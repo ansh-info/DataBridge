@@ -1,0 +1,9 @@
+services:
+  stock-pipeline:
+    build: .
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+    env_file:
+      - .env
+    restart: unless-stopped
