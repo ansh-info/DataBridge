@@ -103,6 +103,8 @@ def generate_mock_stock_data(symbol, num_days=15, interval_minutes=5):
             volume=volume,
         ))
         ts = ts + timedelta(minutes=interval_minutes)
+    # Sort rows by timestamp descending
+    rows.sort(key=lambda r: r.timestamp, reverse=True)
     return spark.createDataFrame(rows)
 
 
