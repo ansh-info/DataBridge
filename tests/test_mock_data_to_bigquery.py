@@ -16,7 +16,10 @@ if ROOT_DIR not in sys.path:
 from pyspark.sql import SparkSession, Row
 from config.gcp_config import setup_gcp_auth
 from config.env_config import PROJECT_ID, DATASET_NAME, GCS_BUCKET
+# Import write utility (not directly used here)
 from etl.alpha_vantage import write_to_bigquery
+# Load configured stock symbols from environment
+STOCK_SYMBOLS = os.getenv("STOCK_SYMBOLS", "AAPL").split(",")
 
 # Step 1: Auth
 setup_gcp_auth()
@@ -112,54 +115,43 @@ def generate_mock_stock_data(symbol, num_records=100):
     return df
 
 
-# Step 3: Generate mock data
-symbol = "AAPL"
-df = generate_mock_stock_data(symbol, num_records=120)  # 2 hours of minute data
+# Step 3 & 4: Generate mock data and write to BigQuery for each configured stock
+for symbol in STOCK_SYMBOLS:
+    df = generate_mock_stock_data(symbol, num_records=120)  # 2 hours of minute data
 
-# Preview the data
-print("[INFO] Preview of mock data:")
-df.show(5)
-df.printSchema()
+    # Preview the data
+    print(f"[INFO] Preview of mock data for {symbol}:")
+    df.show(5)
+    df.printSchema()
 
-# Step 4: Write to BigQuery directly using BigQuery client library
-try:
-    # Convert Spark DataFrame to Pandas
-    pandas_df = df.toPandas()
-    print(
-        f"[INFO] Successfully converted Spark DataFrame to Pandas ({len(pandas_df)} rows)"
-    )
+    # Write to BigQuery directly using BigQuery client library
+    try:
+        pandas_df = df.toPandas()
+        print(f"[INFO] Successfully converted Spark DataFrame to Pandas ({len(pandas_df)} rows) for {symbol}")
 
-    # Initialize BigQuery client
-    client = bigquery.Client(project=PROJECT_ID)
+        client = bigquery.Client(project=PROJECT_ID)
+        table_id = f"{PROJECT_ID}.{DATASET_NAME}.mock_stock_data"
+        job_config = bigquery.LoadJobConfig(
+            schema=[
+                bigquery.SchemaField("symbol", "STRING"),
+                bigquery.SchemaField("timestamp", "TIMESTAMP"),
+                bigquery.SchemaField("open", "FLOAT"),
+                bigquery.SchemaField("high", "FLOAT"),
+                bigquery.SchemaField("low", "FLOAT"),
+                bigquery.SchemaField("close", "FLOAT"),
+                bigquery.SchemaField("volume", "INTEGER"),
+            ],
+            write_disposition="WRITE_APPEND",
+        )
 
-    # Define table reference
-    table_id = f"{PROJECT_ID}.{DATASET_NAME}.mock_stock_data"
+        job = client.load_table_from_dataframe(pandas_df, table_id, job_config=job_config)
+        job.result()  # Wait for the job to complete
 
-    # Configure the load job
-    job_config = bigquery.LoadJobConfig(
-        schema=[
-            bigquery.SchemaField("symbol", "STRING"),
-            bigquery.SchemaField("timestamp", "TIMESTAMP"),
-            bigquery.SchemaField("open", "FLOAT"),
-            bigquery.SchemaField("high", "FLOAT"),
-            bigquery.SchemaField("low", "FLOAT"),
-            bigquery.SchemaField("close", "FLOAT"),
-            bigquery.SchemaField("volume", "INTEGER"),
-        ],
-        write_disposition="WRITE_APPEND",
-    )
+        print(f"[SUCCESS] Loaded {len(pandas_df)} rows into {table_id} for {symbol}")
+    except Exception as e:
+        print(f"[ERROR] Failed to write to BigQuery for {symbol}: {e}")
+        print("[INFO] Saving data to CSV as fallback...")
 
-    # Load the data
-    job = client.load_table_from_dataframe(pandas_df, table_id, job_config=job_config)
-    job.result()  # Wait for the job to complete
-
-    print(f"[SUCCESS] Loaded {len(pandas_df)} rows into {table_id}")
-
-except Exception as e:
-    print(f"[ERROR] Failed to write to BigQuery: {e}")
-    print("[INFO] Saving data to CSV as fallback...")
-
-    # Save to CSV as a fallback
-    csv_path = "mock_stock_data.csv"
-    df.toPandas().to_csv(csv_path, index=False)
-    print(f"[INFO] Data saved to {csv_path} for inspection")
+        csv_path = f"mock_stock_data_{symbol}.csv"
+        df.toPandas().to_csv(csv_path, index=False)
+        print(f"[INFO] Data saved to {csv_path} for inspection")
