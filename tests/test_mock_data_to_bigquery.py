@@ -13,7 +13,9 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+# PySpark SQL and Row
 from pyspark.sql import SparkSession, Row
+from pyspark.sql.functions import col, to_date, date_format
 from config.gcp_config import setup_gcp_auth
 from config.env_config import PROJECT_ID, DATASET_NAME, GCS_BUCKET
 # Import write utility (not directly used here)
@@ -111,6 +113,9 @@ def generate_mock_stock_data(symbol, num_days=15, interval_minutes=5):
 # Step 3 & 4: Generate mock daily data for the past 15 days and write to BigQuery per stock
 for symbol in STOCK_SYMBOLS:
     df = generate_mock_stock_data(symbol, num_days=15, interval_minutes=5)  # 15 days of data at 5-min intervals
+    # Split timestamp into separate date and time columns
+    df = df.withColumn("date", to_date(col("timestamp"))) \
+           .withColumn("time", date_format(col("timestamp"), "HH:mm:ss"))
 
     # Preview the data
     print(f"[INFO] Preview of mock data for {symbol}:")
@@ -128,6 +133,9 @@ for symbol in STOCK_SYMBOLS:
             schema=[
                 bigquery.SchemaField("symbol", "STRING"),
                 bigquery.SchemaField("timestamp", "TIMESTAMP"),
+                bigquery.SchemaField("date", "DATE"),
+                # store time as STRING in HH:MM:SS format
+                bigquery.SchemaField("time", "STRING"),
                 bigquery.SchemaField("open", "FLOAT"),
                 bigquery.SchemaField("high", "FLOAT"),
                 bigquery.SchemaField("low", "FLOAT"),
