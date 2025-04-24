@@ -58,56 +58,57 @@ spark = (
 )
 
 
-def generate_mock_stock_data(symbol, num_days=15):
+def generate_mock_stock_data(symbol, num_days=15, interval_minutes=5):
     """
-    Generate mock daily stock data for the past N days.
+    Generate mock stock data at fixed intervals over the past N days.
 
     Args:
         symbol (str): Stock symbol (e.g., 'AAPL')
-        num_days (int): Number of days (including today) to generate
+        num_days (int): Number of days to go back from now
+        interval_minutes (int): Interval in minutes between data points
 
     Returns:
-        PySpark DataFrame with mock daily stock data
+        PySpark DataFrame with mock stock data
     """
-    print(f"[INFO] Generating {num_days} mock daily records for {symbol}")
+    print(f"[INFO] Generating mock data for {symbol}: last {num_days} days @ {interval_minutes}-min intervals")
+    # End timestamp (rounded down to nearest interval)
+    end_ts = datetime.now().replace(second=0, microsecond=0)
+    minute_mod = end_ts.minute % interval_minutes
+    end_ts = end_ts - timedelta(minutes=minute_mod)
+    # Start timestamp
+    start_ts = end_ts - timedelta(days=num_days)
 
-    # Start date (today at midnight) and work backwards by 1-day intervals
-    end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
-    # Create random but realistic daily stock data
+    # Parameters for random walk
     base_price = 150.0
-    volatility = 0.02  # 2% daily volatility
-    rows = []
+    volatility = 0.005  # per-interval volatility
     current_price = base_price
-
-    for i in range(num_days):
-        timestamp = end_date - timedelta(days=i)
-        # Random daily price change
+    rows = []
+    ts = start_ts
+    while ts <= end_ts:
+        # Simulate price change
         price_change = current_price * volatility * (random.random() * 2 - 1)
         current_price = max(0.01, current_price + price_change)
-        open_price = current_price * (1 + random.uniform(-0.005, 0.005))
-        high_price = max(open_price, current_price * (1 + random.uniform(0, 0.01)))
-        low_price = min(open_price, current_price * (1 - random.uniform(0, 0.01)))
+        open_price = current_price * (1 + random.uniform(-0.002, 0.002))
+        high_price = max(open_price, current_price * (1 + random.uniform(0, 0.005)))
+        low_price = min(open_price, current_price * (1 - random.uniform(0, 0.005)))
         close_price = current_price
-        volume = int(random.uniform(100000, 5000000))
-
-        row = Row(
+        volume = int(random.uniform(10000, 1000000))
+        rows.append(Row(
             symbol=symbol,
-            timestamp=timestamp,
+            timestamp=ts,
             open=open_price,
             high=high_price,
             low=low_price,
             close=close_price,
             volume=volume,
-        )
-        rows.append(row)
-
+        ))
+        ts = ts + timedelta(minutes=interval_minutes)
     return spark.createDataFrame(rows)
 
 
 # Step 3 & 4: Generate mock daily data for the past 15 days and write to BigQuery per stock
 for symbol in STOCK_SYMBOLS:
-    df = generate_mock_stock_data(symbol, num_days=15)  # 15 days of daily data
+    df = generate_mock_stock_data(symbol, num_days=15, interval_minutes=5)  # 15 days of data at 5-min intervals
 
     # Preview the data
     print(f"[INFO] Preview of mock data for {symbol}:")
