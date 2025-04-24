@@ -13,10 +13,15 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+# PySpark SQL and Row
 from pyspark.sql import SparkSession, Row
+from pyspark.sql.functions import col, to_date, date_format
 from config.gcp_config import setup_gcp_auth
 from config.env_config import PROJECT_ID, DATASET_NAME, GCS_BUCKET
+# Import write utility (not directly used here)
 from etl.alpha_vantage import write_to_bigquery
+# Load configured stock symbols from environment
+STOCK_SYMBOLS = os.getenv("STOCK_SYMBOLS", "AAPL").split(",")
 
 # Step 1: Auth
 setup_gcp_auth()
@@ -55,111 +60,99 @@ spark = (
 )
 
 
-def generate_mock_stock_data(symbol, num_records=100):
+def generate_mock_stock_data(symbol, num_days=15, interval_minutes=5):
     """
-    Generate mock stock market data similar to Alpha Vantage intraday data.
+    Generate mock stock data at fixed intervals over the past N days.
 
     Args:
         symbol (str): Stock symbol (e.g., 'AAPL')
-        num_records (int): Number of records to generate
+        num_days (int): Number of days to go back from now
+        interval_minutes (int): Interval in minutes between data points
 
     Returns:
         PySpark DataFrame with mock stock data
     """
-    print(f"[INFO] Generating {num_records} mock records for {symbol}")
+    print(f"[INFO] Generating mock data for {symbol}: last {num_days} days @ {interval_minutes}-min intervals")
+    # End timestamp (rounded down to nearest interval)
+    end_ts = datetime.now().replace(second=0, microsecond=0)
+    minute_mod = end_ts.minute % interval_minutes
+    end_ts = end_ts - timedelta(minutes=minute_mod)
+    # Start timestamp
+    start_ts = end_ts - timedelta(days=num_days)
 
-    # Start time (now) and work backwards by 1-minute intervals
-    end_time = datetime.now().replace(second=0, microsecond=0)
-
-    # Create random but realistic stock data
-    base_price = 150.0  # Starting price for AAPL-like stock
-    price_volatility = 0.005  # 0.5% volatility between records
-
-    rows = []
+    # Parameters for random walk
+    base_price = 150.0
+    volatility = 0.005  # per-interval volatility
     current_price = base_price
-
-    for i in range(num_records):
-        # Calculate timestamp (going backward in time)
-        timestamp = end_time - timedelta(minutes=i)
-
-        # Generate realistic price movement (random walk with drift)
-        price_change = current_price * price_volatility * (random.random() * 2 - 1)
-        current_price = max(
-            0.01, current_price + price_change
-        )  # Ensure price stays positive
-
-        # Calculate other values based on current_price
-        open_price = current_price * (1 + random.uniform(-0.001, 0.001))
-        high_price = current_price * (1 + random.uniform(0, 0.002))
-        low_price = current_price * (1 - random.uniform(0, 0.002))
+    rows = []
+    ts = start_ts
+    while ts <= end_ts:
+        # Simulate price change
+        price_change = current_price * volatility * (random.random() * 2 - 1)
+        current_price = max(0.01, current_price + price_change)
+        open_price = current_price * (1 + random.uniform(-0.002, 0.002))
+        high_price = max(open_price, current_price * (1 + random.uniform(0, 0.005)))
+        low_price = min(open_price, current_price * (1 - random.uniform(0, 0.005)))
         close_price = current_price
         volume = int(random.uniform(10000, 1000000))
-
-        # Create row
-        row = Row(
+        rows.append(Row(
             symbol=symbol,
-            timestamp=timestamp,
+            timestamp=ts,
             open=open_price,
             high=high_price,
             low=low_price,
             close=close_price,
             volume=volume,
+        ))
+        ts = ts + timedelta(minutes=interval_minutes)
+    # Sort rows by timestamp descending
+    rows.sort(key=lambda r: r.timestamp, reverse=True)
+    return spark.createDataFrame(rows)
+
+
+# Step 3 & 4: Generate mock daily data for the past 15 days and write to BigQuery per stock
+for symbol in STOCK_SYMBOLS:
+    df = generate_mock_stock_data(symbol, num_days=15, interval_minutes=5)  # 15 days of data at 5-min intervals
+    # Split timestamp into separate date and time columns
+    df = df.withColumn("date", to_date(col("timestamp"))) \
+           .withColumn("time", date_format(col("timestamp"), "HH:mm:ss"))
+
+    # Preview the data
+    print(f"[INFO] Preview of mock data for {symbol}:")
+    df.show(5)
+    df.printSchema()
+
+    # Write to BigQuery directly using BigQuery client library
+    try:
+        pandas_df = df.toPandas()
+        print(f"[INFO] Successfully converted Spark DataFrame to Pandas ({len(pandas_df)} rows) for {symbol}")
+
+        client = bigquery.Client(project=PROJECT_ID)
+        table_id = f"{PROJECT_ID}.{DATASET_NAME}.mock_stock_data"
+        job_config = bigquery.LoadJobConfig(
+            schema=[
+                bigquery.SchemaField("symbol", "STRING"),
+                bigquery.SchemaField("timestamp", "TIMESTAMP"),
+                bigquery.SchemaField("date", "DATE"),
+                # store time as STRING in HH:MM:SS format
+                bigquery.SchemaField("time", "STRING"),
+                bigquery.SchemaField("open", "FLOAT"),
+                bigquery.SchemaField("high", "FLOAT"),
+                bigquery.SchemaField("low", "FLOAT"),
+                bigquery.SchemaField("close", "FLOAT"),
+                bigquery.SchemaField("volume", "INTEGER"),
+            ],
+            write_disposition="WRITE_APPEND",
         )
-        rows.append(row)
 
-    # Create DataFrame from the generated data
-    df = spark.createDataFrame(rows)
-    return df
+        job = client.load_table_from_dataframe(pandas_df, table_id, job_config=job_config)
+        job.result()  # Wait for the job to complete
 
+        print(f"[SUCCESS] Loaded {len(pandas_df)} rows into {table_id} for {symbol}")
+    except Exception as e:
+        print(f"[ERROR] Failed to write to BigQuery for {symbol}: {e}")
+        print("[INFO] Saving data to CSV as fallback...")
 
-# Step 3: Generate mock data
-symbol = "AAPL"
-df = generate_mock_stock_data(symbol, num_records=120)  # 2 hours of minute data
-
-# Preview the data
-print("[INFO] Preview of mock data:")
-df.show(5)
-df.printSchema()
-
-# Step 4: Write to BigQuery directly using BigQuery client library
-try:
-    # Convert Spark DataFrame to Pandas
-    pandas_df = df.toPandas()
-    print(
-        f"[INFO] Successfully converted Spark DataFrame to Pandas ({len(pandas_df)} rows)"
-    )
-
-    # Initialize BigQuery client
-    client = bigquery.Client(project=PROJECT_ID)
-
-    # Define table reference
-    table_id = f"{PROJECT_ID}.{DATASET_NAME}.mock_stock_data"
-
-    # Configure the load job
-    job_config = bigquery.LoadJobConfig(
-        schema=[
-            bigquery.SchemaField("symbol", "STRING"),
-            bigquery.SchemaField("timestamp", "TIMESTAMP"),
-            bigquery.SchemaField("open", "FLOAT"),
-            bigquery.SchemaField("high", "FLOAT"),
-            bigquery.SchemaField("low", "FLOAT"),
-            bigquery.SchemaField("close", "FLOAT"),
-            bigquery.SchemaField("volume", "INTEGER"),
-        ],
-        write_disposition="WRITE_APPEND",
-    )
-
-    # Load the data
-    job = client.load_table_from_dataframe(pandas_df, table_id, job_config=job_config)
-    job.result()  # Wait for the job to complete
-
-    print(f"[SUCCESS] Loaded {len(pandas_df)} rows into {table_id}")
-
-except Exception as e:
-    print(f"[ERROR] Failed to write to BigQuery: {e}")
-    print("[INFO] Saving data to CSV as fallback...")
-
-    # Save to CSV as a fallback
-    csv_path = "mock_stock_data.csv"
-    df.toPandas().to_csv(csv_path, index=False)
-    print(f"[INFO] Data saved to {csv_path} for inspection")
+        csv_path = f"mock_stock_data_{symbol}.csv"
+        df.toPandas().to_csv(csv_path, index=False)
+        print(f"[INFO] Data saved to {csv_path} for inspection")
