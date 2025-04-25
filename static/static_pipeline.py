@@ -18,6 +18,7 @@ except ImportError:
     # .env support is optional; ensure required env vars are set
     pass
 import glob
+import re
 from pyspark.sql import SparkSession
 
 # Setup environment
@@ -95,7 +96,29 @@ def read_csv_to_spark(path: str):
 def write_to_bigquery(df, table_name: str) -> int:
     """
     Write Spark DataFrame to BigQuery using the Spark BigQuery connector.
+    Automatically sanitizes column names to conform to BigQuery requirements.
     """
+    # Sanitize column names
+    def sane_name(name: str) -> str:
+        # Strip whitespace
+        col = name.strip()
+        # Replace invalid characters with underscore
+        col = re.sub(r"[^0-9a-zA-Z_]", "_", col)
+        # Collapse multiple underscores
+        col = re.sub(r"_+", "_", col)
+        # Trim leading/trailing underscores
+        col = col.strip("_")
+        # Prefix digit-leading names with underscore
+        if re.match(r"^[0-9]", col):
+            col = f"_{col}"
+        # Ensure non-empty
+        return col or "_"
+
+    orig_cols = df.columns
+    new_cols = [sane_name(c) for c in orig_cols]
+    for old, new in zip(orig_cols, new_cols):
+        if old != new:
+            df = df.withColumnRenamed(old, new)
     destination = f"{PROJECT_ID}.{DATASET_NAME}.{table_name}"
     print(f"[INFO] Writing DataFrame to BigQuery at {destination}")
     df.write.format("bigquery") \
