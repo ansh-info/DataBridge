@@ -129,26 +129,3 @@ def write_to_bigquery(df, table_name: str) -> int:
     count = df.count()
     print(f"[SUCCESS] Wrote {count} rows to {destination}")
     return count
-
-def run_pipeline():
-    """
-    Main entrypoint for the static data pipeline.
-    """
-    dataset_ref = "camnugent/sandp500"
-
-    # 1. Download the dataset
-    data_path = load_kaggle_dataset(dataset_ref)
-
-    # 2. Load CSV(s) into Spark DataFrame
-    df = read_csv_to_spark(data_path)
-    print("[INFO] Preview of loaded data:")
-    df.show(5)
-    df.printSchema()
-
-    # 3. Write to BigQuery
-    rows_written = write_to_bigquery(df, table_name="sandp500_data")
-    print(f"[INFO] Pipeline complete. Total rows written: {rows_written}")
-
-if __name__ == "__main__":
-    print(f"[INFO] Starting static data pipeline at {datetime.now()}")
-    run_pipeline()
