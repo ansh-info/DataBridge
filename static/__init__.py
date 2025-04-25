@@ -1,0 +1,3 @@
+"""
+Static data pipeline package
+"""

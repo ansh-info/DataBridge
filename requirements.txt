@@ -17,4 +17,6 @@ black
 flake8
 gunicorn
 py4j
+kagglehub
+kaggle
 
