@@ -16,7 +16,7 @@ try:
 except ImportError:
     print("[WARN] python-dotenv not installed; skipping .env loading")
 
-# Ensure project root is in path
+# Ensure project root is in path for imports
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)

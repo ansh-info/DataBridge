@@ -3,20 +3,20 @@
 Static pipeline for the Cryptocurrency Price History dataset.
 
 Downloads the latest cryptocurrency price history dataset from Kaggle,
-loads it into a Spark DataFrame, and writes the combined data to BigQuery.
+loads all CSV files into a Spark DataFrame, and writes the combined data to BigQuery.
 """
 import os
 import sys
 from datetime import datetime
 
-# Load .env if available
+# Load environment variables from .env if available
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
     print("[WARN] python-dotenv not installed; skipping .env loading")
 
-# Ensure project root is in path
+# Ensure project root is in path for imports
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
