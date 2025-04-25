@@ -17,6 +17,7 @@ except ImportError:
     print("[WARN] python-dotenv not installed; skipping .env loading")
     # .env support is optional; ensure required env vars are set
     pass
+import glob
 from pyspark.sql import SparkSession
 
 # Setup environment
@@ -74,14 +75,20 @@ def load_kaggle_dataset(dataset_ref: str) -> str:
 
 def read_csv_to_spark(path: str):
     """
-    Read all CSV files under the given directory into a Spark DataFrame recursively.
+    Read all CSV files under the given directory into a Spark DataFrame.
+    Only files ending with .csv (case-insensitive) are loaded.
     """
+    # Discover CSV files via glob
+    pattern = os.path.join(path, '**', '*.csv')
+    csv_files = glob.glob(pattern, recursive=True)
+    if not csv_files:
+        raise FileNotFoundError(f"No CSV files found under '{path}' to load.")
+    print(f"[INFO] Found {len(csv_files)} CSV files under {path}")
     df = (
         spark.read
              .option("header", "true")
              .option("inferSchema", "true")
-             .option("recursiveFileLookup", "true")
-             .csv(path)
+             .csv(csv_files)
     )
     return df
 
