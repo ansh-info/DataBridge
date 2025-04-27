@@ -121,3 +121,31 @@ models:
         description: "Closing price of the day"
       - name: volume
         description: "Total volume traded in the day"
+  # Marts: final fact table
+  - name: daily_stock_signals
+    description: "Final fact table combining daily stock OHLCV with market and macro indicators"
+    columns:
+      - name: symbol
+        description: "Stock symbol"
+        tests:
+          - not_null
+      - name: date
+        description: "Date of the record"
+        tests:
+          - not_null
+      - name: open
+        description: "Opening price"
+      - name: high
+        description: "High price"
+      - name: low
+        description: "Low price"
+      - name: close
+        description: "Closing price"
+      - name: volume
+        description: "Total volume traded"
+      - name: sp500_close
+        description: "S&P 500 closing value"
+      - name: crypto_avg_close
+        description: "Average closing value across cryptocurrencies"
+      - name: gdp_per_capita
+        description: "GDP per capita for United States (filtered indicator)"
