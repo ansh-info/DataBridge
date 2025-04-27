@@ -15,18 +15,16 @@ sp500 as (
 ),
 crypto as (
   select
-    date,
+    date(date) as date,
     avg(close) as crypto_avg_close
   from {{ ref('stg_crypto_price_history') }}
-  group by date
-),
-economy as (
+  group by date(date)
+), economy as (
   select
-    year,
-    value as gdp_per_capita
-  from {{ ref('stg_global_economy_indicators') }}
-  where country = 'United States'
-    and indicator ilike '%gdp%'
+    Year as year,
+    Gross_Domestic_Product_GDP as gdp_per_capita
+  from `{{ target.project }}.{{ target.dataset }}.global_economy_indicators`
+  where Country = 'United States'
 )
 
 select
@@ -47,4 +45,3 @@ left join crypto c
   on s.date = c.date
 left join economy e
   on extract(year from s.date) = e.year
-;
