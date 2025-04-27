@@ -39,3 +39,69 @@ models:
           - relationships:
               to: ref('stg_customers')
               field: customer_id
+
+  # Staging models for streaming and static sources
+  - name: stg_streaming_stock_data
+    description: "Staged intraday stock data from streaming pipeline"
+    columns:
+      - name: symbol
+        description: "Stock ticker symbol"
+        tests:
+          - not_null
+      - name: timestamp
+        description: "Timestamp of the intraday quote"
+        tests:
+          - not_null
+      - name: open
+        description: "Opening price"
+      - name: high
+        description: "High price"
+      - name: low
+        description: "Low price"
+      - name: close
+        description: "Closing price"
+      - name: volume
+        description: "Volume traded"
+
+  - name: stg_sandp500_data
+    description: "Staged S&P 500 daily index data"
+    columns:
+      - name: date
+        description: "Date of the index record"
+        tests:
+          - not_null
+      - name: open
+        description: "Opening index value"
+      - name: high
+      - name: low
+      - name: close
+      - name: volume
+
+  - name: stg_crypto_price_history
+    description: "Staged cryptocurrency price history data"
+    columns:
+      - name: date
+        description: "Date of the record"
+        tests:
+          - not_null
+      - name: symbol
+        description: "Cryptocurrency symbol"
+        tests:
+          - not_null
+      - name: open
+      - name: high
+      - name: low
+      - name: close
+      - name: volume
+
+  - name: stg_global_economy_indicators
+    description: "Staged global economy indicators data"
+    columns:
+      - name: country
+        description: "Country name"
+      - name: indicator
+        description: "Indicator name"
+      - name: year
+        description: "Year"
+      - name: value
+        description: "Indicator value"
