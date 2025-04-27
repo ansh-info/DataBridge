@@ -105,3 +105,33 @@ models:
         description: "Year"
       - name: value
         description: "Indicator value"
+  # Mock real-time pipeline staging model
+  - name: stg_realtime_mock_stock_data
+    description: "Staged mock real-time stock data from the mock pipeline"
+    columns:
+      - name: symbol
+        description: "Stock ticker symbol"
+        tests:
+          - not_null
+      - name: timestamp
+        description: "Timestamp of the mock data point"
+        tests:
+          - not_null
+      - name: date
+        description: "Date component of the timestamp"
+        tests:
+          - not_null
+      - name: time
+        description: "Time component of the timestamp"
+        tests:
+          - not_null
+      - name: open
+        description: "Opening price"
+      - name: high
+        description: "High price"
+      - name: low
+        description: "Low price"
+      - name: close
+        description: "Closing price"
+      - name: volume
+        description: "Volume traded"
