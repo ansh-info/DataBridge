@@ -135,3 +135,28 @@ models:
         description: "Closing price"
       - name: volume
         description: "Volume traded"
+  # Intermediate models
+  - name: int_daily_stock_summary
+    description: "Daily OHLCV summary for each mock real-time stock symbol"
+    tests:
+      - unique_combination_of:
+          combination_of: [symbol, date]
+    columns:
+      - name: symbol
+        description: "Stock symbol"
+        tests:
+          - not_null
+      - name: date
+        description: "Date of the summary"
+        tests:
+          - not_null
+      - name: open
+        description: "Opening price of the day"
+      - name: high
+        description: "Highest price of the day"
+      - name: low
+        description: "Lowest price of the day"
+      - name: close
+        description: "Closing price of the day"
+      - name: volume
+        description: "Total volume traded in the day"
