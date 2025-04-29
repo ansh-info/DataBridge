@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: fact_stock_tick
+    description: "Intraday stock tick data (mocked real-time stream)"
+    columns:
+      - name: symbol
+        description: "Stock ticker symbol"
+      - name: timestamp
+        description: "Timestamp of the tick"
+      - name: date
+        description: "Date component of the timestamp"
+      - name: open
+        description: "Opening price"
+      - name: high
+        description: "Highest price"
+      - name: low
+        description: "Lowest price"
+      - name: close
+        description: "Closing price"
+      - name: volume
+        description: "Volume traded"
+
+  - name: fact_daily_summary
+    description: "Daily OHLCV summary per stock symbol"
+    columns:
+      - name: symbol
+      - name: date
+      - name: open
+      - name: high
+      - name: low
+      - name: close
+      - name: volume
+
+  - name: fact_daily_features
+    description: "Daily static & synthetic features per stock symbol"
+    columns:
+      - name: symbol
+      - name: date
+      - name: eps
+      - name: pe_ratio
+      - name: market_cap
+      - name: sector
+      - name: ma_10
+      - name: ma_50
+      - name: rsi
+      - name: macd
+      - name: bb_lower
+      - name: bb_upper
+      - name: sentiment_score
+      - name: news_volume
+      - name: twitter_mentions
+      - name: inflation_rate
+      - name: unemployment_rate
+      - name: gdp_growth
+      - name: interest_rate
