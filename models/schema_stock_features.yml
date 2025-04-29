@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: stock_feature_mart
+    description: "Mart keyed by symbol with aggregated static and latest streaming features"
+    columns:
+      - name: symbol
+        description: "Stock symbol"
+        tests:
+          - not_null
+          - unique
+      - name: last_close
+        description: "Latest closing price from the streaming pipeline"
+      - name: last_volume
+        description: "Latest volume traded from the streaming pipeline"
+      - name: avg_eps
+        description: "Average EPS from synthetic fundamentals"
+      - name: avg_pe_ratio
+        description: "Average P/E ratio from synthetic fundamentals"
+      - name: avg_market_cap
+        description: "Average market capitalization from synthetic fundamentals"
+      - name: avg_ma_10
+        description: "Average 10-day moving average from synthetic technical indicators"
+      - name: avg_ma_50
+        description: "Average 50-day moving average from synthetic technical indicators"
+      - name: avg_rsi
+        description: "Average RSI from synthetic technical indicators"
+      - name: avg_macd
+        description: "Average MACD from synthetic technical indicators"
+      - name: avg_bb_lower
+        description: "Average Bollinger Band lower from synthetic technical indicators"
+      - name: avg_bb_upper
+        description: "Average Bollinger Band upper from synthetic technical indicators"
+      - name: avg_sentiment_score
+        description: "Average sentiment score from synthetic sentiment"
+      - name: avg_news_volume
+        description: "Average news volume from synthetic sentiment"
+      - name: avg_twitter_mentions
+        description: "Average Twitter mentions from synthetic sentiment"
+      - name: inflation_rate
+        description: "Latest synthetic inflation rate"
+      - name: unemployment_rate
+        description: "Latest synthetic unemployment rate"
+      - name: gdp_growth
+        description: "Latest synthetic GDP growth rate"
+      - name: interest_rate
+        description: "Latest synthetic interest rate"
