@@ -279,6 +279,24 @@ def generate_commodity_prices(dates):
             })
     return pd.DataFrame(rows)
 
+def generate_ratings(symbols, dates):
+    """Generate synthetic analyst ratings per symbol per date."""
+    rows = []
+    # Rating scale: 1=Strong Sell, 2=Sell, 3=Hold, 4=Buy, 5=Strong Buy
+    for sym in symbols:
+        for d in dates:
+            # Simulate ratings each day
+            rating = random.choice([1, 2, 3, 4, 5])
+            # Number of analysts providing ratings
+            count = random.randint(1, 50)
+            rows.append({
+                "symbol": sym,
+                "date": d,
+                "rating": rating,
+                "rating_count": count,
+            })
+    return pd.DataFrame(rows)
+
 
 def load_to_bq(df, table_name, truncate=True):
     """Load a Pandas DataFrame to BigQuery, optionally truncating the target table."""
@@ -342,6 +360,9 @@ def run_pipeline(days: int = 30):
     # Commodity prices
     df_comm = generate_commodity_prices(dates)
     load_to_bq(df_comm, "test_commodity_prices", truncate=True)
+    # Analyst ratings
+    df_rat = generate_ratings(symbols, dates)
+    load_to_bq(df_rat, "test_ratings", truncate=True)
     print("[INFO] Test static data pipeline complete.")
 
 
