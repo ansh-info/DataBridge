@@ -203,6 +203,82 @@ def generate_earnings(symbols, dates):
             })
     return pd.DataFrame(rows)
 
+def generate_volatility(symbols, dates):
+    """Generate synthetic volatility and risk metrics per symbol per date."""
+    rows = []
+    for sym in symbols:
+        for d in dates:
+            daily_ret = round(random.uniform(-0.1, 0.1), 4)
+            vol = round(random.uniform(0.01, 0.05), 4)
+            beta = round(random.uniform(0.5, 1.5), 4)
+            rows.append({
+                "symbol": sym,
+                "date": d,
+                "daily_return": daily_ret,
+                "volatility": vol,
+                "beta": beta,
+            })
+    return pd.DataFrame(rows)
+
+def generate_sp500(dates):
+    """Generate synthetic S&P 500 index OHLCV data per date."""
+    rows = []
+    base = 4000.0
+    for d in dates:
+        opn = random.uniform(base * 0.98, base * 1.02)
+        close = random.uniform(base * 0.98, base * 1.02)
+        high = max(opn, close) * random.uniform(1.0, 1.01)
+        low = min(opn, close) * random.uniform(0.99, 1.0)
+        vol = random.randint(100_000_000, 500_000_000)
+        rows.append({
+            "date": d,
+            "open": round(opn, 2),
+            "high": round(high, 2),
+            "low": round(low, 2),
+            "close": round(close, 2),
+            "volume": vol,
+        })
+    return pd.DataFrame(rows)
+
+def generate_vix(dates):
+    """Generate synthetic VIX implied volatility index per date."""
+    rows = []
+    for d in dates:
+        val = round(random.uniform(10.0, 30.0), 2)
+        rows.append({
+            "date": d,
+            "implied_volatility": val,
+        })
+    return pd.DataFrame(rows)
+
+def generate_fx_rates(dates):
+    """Generate synthetic FX rates for major currency pairs per date."""
+    pairs = ["USD/EUR", "USD/JPY", "GBP/USD"]
+    rows = []
+    for pair in pairs:
+        for d in dates:
+            rate = round(random.uniform(0.5, 2.0), 4)
+            rows.append({
+                "currency_pair": pair,
+                "date": d,
+                "rate": rate,
+            })
+    return pd.DataFrame(rows)
+
+def generate_commodity_prices(dates):
+    """Generate synthetic commodity prices per date."""
+    comms = {"Gold": 1800.0, "Oil": 70.0}
+    rows = []
+    for name, base in comms.items():
+        for d in dates:
+            price = round(random.uniform(base * 0.9, base * 1.1), 2)
+            rows.append({
+                "commodity": name,
+                "date": d,
+                "price": price,
+            })
+    return pd.DataFrame(rows)
+
 
 def load_to_bq(df, table_name, truncate=True):
     """Load a Pandas DataFrame to BigQuery, optionally truncating the target table."""
@@ -251,6 +327,21 @@ def run_pipeline(days: int = 30):
     # Earnings events
     df_earn = generate_earnings(symbols, dates)
     load_to_bq(df_earn, "test_earnings", truncate=True)
+    # Volatility metrics
+    df_vol = generate_volatility(symbols, dates)
+    load_to_bq(df_vol, "test_volatility", truncate=True)
+    # Benchmark indices: S&P 500
+    df_sp = generate_sp500(dates)
+    load_to_bq(df_sp, "test_sp500", truncate=True)
+    # Benchmark index: VIX
+    df_vix = generate_vix(dates)
+    load_to_bq(df_vix, "test_vix", truncate=True)
+    # FX rates
+    df_fx = generate_fx_rates(dates)
+    load_to_bq(df_fx, "test_fx_rates", truncate=True)
+    # Commodity prices
+    df_comm = generate_commodity_prices(dates)
+    load_to_bq(df_comm, "test_commodity_prices", truncate=True)
     print("[INFO] Test static data pipeline complete.")
 
 
