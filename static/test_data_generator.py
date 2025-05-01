@@ -160,6 +160,25 @@ def generate_dividends(symbols, dates):
             })
     return pd.DataFrame(rows)
 
+def generate_splits(symbols, dates):
+    """Generate synthetic stock split events per symbol per date."""
+    rows = []
+    # Typical split ratios (new shares per old share): 2-for-1, 3-for-1, 3-for-2, etc.
+    possible_ratios = [2.0, 3.0, 1.5, 0.5]
+    for sym in symbols:
+        for d in dates:
+            # Rare split events
+            if random.random() < 0.005:
+                ratio = random.choice(possible_ratios)
+            else:
+                ratio = 1.0
+            rows.append({
+                "symbol": sym,
+                "date": d,
+                "split_ratio": ratio,
+            })
+    return pd.DataFrame(rows)
+
 
 def load_to_bq(df, table_name, truncate=True):
     """Load a Pandas DataFrame to BigQuery, optionally truncating the target table."""
@@ -202,6 +221,9 @@ def run_pipeline(days: int = 30):
     # Dividends
     df_div = generate_dividends(symbols, dates)
     load_to_bq(df_div, "test_dividends", truncate=True)
+    # Stock splits
+    df_splits = generate_splits(symbols, dates)
+    load_to_bq(df_splits, "test_splits", truncate=True)
     print("[INFO] Test static data pipeline complete.")
 
 
