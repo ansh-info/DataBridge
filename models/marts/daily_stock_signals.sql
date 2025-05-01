@@ -1,5 +1,6 @@
 {{ config(
-    materialized='table'
+    materialized='table',
+    enabled=false
 ) }}
 
 -- Mart model: combine daily stock summary with market and macro indicators

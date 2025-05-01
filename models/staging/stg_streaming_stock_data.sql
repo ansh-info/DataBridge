@@ -1,5 +1,6 @@
 {{ config(
-    materialized='view'
+    materialized='view',
+    enabled=false
 ) }}
 
 -- Staging model: raw intraday stock data from streaming pipeline
