@@ -139,6 +139,26 @@ def generate_economic(dates):
             }
         )
     return pd.DataFrame(rows)
+    
+def generate_dividends(symbols, dates):
+    """Generate synthetic dividend data per symbol per date."""
+    rows = []
+    for sym in symbols:
+        for d in dates:
+            # Randomly assign dividends (most days zero)
+            if random.random() < 0.02:
+                amt = round(random.uniform(0.1, 2.0), 2)
+                yld = round(random.uniform(0.001, 0.05), 4)
+            else:
+                amt = 0.0
+                yld = 0.0
+            rows.append({
+                "symbol": sym,
+                "date": d,
+                "dividend_amount": amt,
+                "dividend_yield": yld,
+            })
+    return pd.DataFrame(rows)
 
 
 def load_to_bq(df, table_name, truncate=True):
@@ -179,6 +199,9 @@ def run_pipeline(days: int = 30):
     # Economic indicators
     df_econ = generate_economic(dates)
     load_to_bq(df_econ, "test_economic_indicators", truncate=True)
+    # Dividends
+    df_div = generate_dividends(symbols, dates)
+    load_to_bq(df_div, "test_dividends", truncate=True)
     print("[INFO] Test static data pipeline complete.")
 
 
