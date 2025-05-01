@@ -179,6 +179,30 @@ def generate_splits(symbols, dates):
             })
     return pd.DataFrame(rows)
 
+def generate_earnings(symbols, dates):
+    """Generate synthetic earnings events per symbol per date."""
+    rows = []
+    for sym in symbols:
+        for d in dates:
+            # Simulate quarterly earnings with ~5% chance on any day
+            if random.random() < 0.05:
+                est = round(random.uniform(0.5, 5.0), 2)
+                actual = round(est + random.uniform(-0.5, 0.5), 2)
+                # Avoid division by zero
+                surprise = round(((actual - est) / est) * 100, 2) if est != 0 else 0.0
+            else:
+                est = None
+                actual = None
+                surprise = None
+            rows.append({
+                "symbol": sym,
+                "date": d,
+                "est_eps": est,
+                "actual_eps": actual,
+                "surprise_pct": surprise,
+            })
+    return pd.DataFrame(rows)
+
 
 def load_to_bq(df, table_name, truncate=True):
     """Load a Pandas DataFrame to BigQuery, optionally truncating the target table."""
@@ -224,6 +248,9 @@ def run_pipeline(days: int = 30):
     # Stock splits
     df_splits = generate_splits(symbols, dates)
     load_to_bq(df_splits, "test_splits", truncate=True)
+    # Earnings events
+    df_earn = generate_earnings(symbols, dates)
+    load_to_bq(df_earn, "test_earnings", truncate=True)
     print("[INFO] Test static data pipeline complete.")
 
 
