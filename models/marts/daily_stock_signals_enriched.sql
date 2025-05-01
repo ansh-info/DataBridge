@@ -1,5 +1,6 @@
 {{ config(
-    materialized='table'
+    materialized='table',
+    enabled=false
 ) }}
 
 -- Enriched mart model: combine daily stock summary with expanded static and streaming features

@@ -1,5 +1,6 @@
 {{ config(
-    materialized='view'
+    materialized='view',
+    enabled=false
 ) }}
 
 -- Staging model: raw global economy indicators data from Kaggle static pipeline

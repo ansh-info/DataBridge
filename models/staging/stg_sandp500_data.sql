@@ -1,5 +1,6 @@
 {{ config(
-    materialized='view'
+    materialized='view',
+    enabled=false
 ) }}
 
 -- Staging model: raw S&P 500 daily index data from Kaggle static pipeline
