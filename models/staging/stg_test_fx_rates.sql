@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic FX rates data
+-- Staging model: test FX rates data
 select
   currency_pair,
   date,

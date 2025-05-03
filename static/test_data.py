@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate synthetic static test datasets and load them into BigQuery.
+Generate test static test datasets and load them into BigQuery.
 """
 import os
 import sys
@@ -41,7 +41,7 @@ def generate_date_range(days=30):
 
 
 def generate_fundamentals(symbols, dates):
-    """Generate synthetic fundamental metrics per symbol per date."""
+    """Generate test fundamental metrics per symbol per date."""
     sectors = [
         "Technology",
         "Healthcare",
@@ -76,7 +76,7 @@ def generate_fundamentals(symbols, dates):
 
 
 def generate_technical(symbols, dates):
-    """Generate synthetic technical indicators per symbol per date."""
+    """Generate test technical indicators per symbol per date."""
     rows = []
     for sym in symbols:
         for d in dates:
@@ -102,7 +102,7 @@ def generate_technical(symbols, dates):
 
 
 def generate_sentiment(symbols, dates):
-    """Generate synthetic sentiment metrics per symbol per date."""
+    """Generate test sentiment metrics per symbol per date."""
     rows = []
     for sym in symbols:
         for d in dates:
@@ -122,7 +122,7 @@ def generate_sentiment(symbols, dates):
 
 
 def generate_economic(dates):
-    """Generate synthetic economic indicators per date (no symbol)."""
+    """Generate test economic indicators per date (no symbol)."""
     rows = []
     for d in dates:
         inflation = random.uniform(-2, 4)
@@ -141,7 +141,7 @@ def generate_economic(dates):
     return pd.DataFrame(rows)
     
 def generate_dividends(symbols, dates):
-    """Generate synthetic dividend data per symbol per date."""
+    """Generate test dividend data per symbol per date."""
     rows = []
     for sym in symbols:
         for d in dates:
@@ -161,7 +161,7 @@ def generate_dividends(symbols, dates):
     return pd.DataFrame(rows)
 
 def generate_splits(symbols, dates):
-    """Generate synthetic stock split events per symbol per date."""
+    """Generate test stock split events per symbol per date."""
     rows = []
     # Typical split ratios (new shares per old share): 2-for-1, 3-for-1, 3-for-2, etc.
     possible_ratios = [2.0, 3.0, 1.5, 0.5]
@@ -180,7 +180,7 @@ def generate_splits(symbols, dates):
     return pd.DataFrame(rows)
 
 def generate_earnings(symbols, dates):
-    """Generate synthetic earnings events per symbol per date."""
+    """Generate test earnings events per symbol per date."""
     rows = []
     for sym in symbols:
         for d in dates:
@@ -204,7 +204,7 @@ def generate_earnings(symbols, dates):
     return pd.DataFrame(rows)
 
 def generate_volatility(symbols, dates):
-    """Generate synthetic volatility and risk metrics per symbol per date."""
+    """Generate test volatility and risk metrics per symbol per date."""
     rows = []
     for sym in symbols:
         for d in dates:
@@ -221,7 +221,7 @@ def generate_volatility(symbols, dates):
     return pd.DataFrame(rows)
 
 def generate_sp500(dates):
-    """Generate synthetic S&P 500 index OHLCV data per date."""
+    """Generate test S&P 500 index OHLCV data per date."""
     rows = []
     base = 4000.0
     for d in dates:
@@ -241,7 +241,7 @@ def generate_sp500(dates):
     return pd.DataFrame(rows)
 
 def generate_vix(dates):
-    """Generate synthetic VIX implied volatility index per date."""
+    """Generate test VIX implied volatility index per date."""
     rows = []
     for d in dates:
         val = round(random.uniform(10.0, 30.0), 2)
@@ -252,7 +252,7 @@ def generate_vix(dates):
     return pd.DataFrame(rows)
 
 def generate_fx_rates(dates):
-    """Generate synthetic FX rates for major currency pairs per date."""
+    """Generate test FX rates for major currency pairs per date."""
     pairs = ["USD/EUR", "USD/JPY", "GBP/USD"]
     rows = []
     for pair in pairs:
@@ -266,7 +266,7 @@ def generate_fx_rates(dates):
     return pd.DataFrame(rows)
 
 def generate_commodity_prices(dates):
-    """Generate synthetic commodity prices per date."""
+    """Generate test commodity prices per date."""
     comms = {"Gold": 1800.0, "Oil": 70.0}
     rows = []
     for name, base in comms.items():
@@ -280,7 +280,7 @@ def generate_commodity_prices(dates):
     return pd.DataFrame(rows)
 
 def generate_ratings(symbols, dates):
-    """Generate synthetic analyst ratings per symbol per date."""
+    """Generate test analyst ratings per symbol per date."""
     rows = []
     # Rating scale: 1=Strong Sell, 2=Sell, 3=Hold, 4=Buy, 5=Strong Buy
     for sym in symbols:
@@ -313,10 +313,20 @@ def load_to_bq(df, table_name, truncate=True):
     job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
     job.result()
     print(f"[INFO] Loaded {len(df)} rows into {table_id}")
+    # Save to Parquet if path provided
+    parquet_path = os.getenv("PARQUET_OUTPUT_PATH")
+    if parquet_path:
+        os.makedirs(parquet_path, exist_ok=True)
+        dest_file = os.path.join(parquet_path, f"{table_name}.parquet")
+        try:
+            df.to_parquet(dest_file, index=False)
+            print(f"[INFO] Wrote {len(df)} rows to Parquet at {dest_file}")
+        except Exception as e:
+            print(f"[ERROR] Failed to write Parquet for {table_name}: {e}")
 
 
 def run_pipeline(days: int = 30):
-    """Main entrypoint: generate and load all synthetic test datasets."""
+    """Main entrypoint: generate and load all test test datasets."""
     print(f"[INFO] Generating test static datasets at {datetime.now()}")
     setup_gcp_auth()
     symbols = get_symbols()

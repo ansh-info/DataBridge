@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic stock split data
+-- Staging model: test stock split data
 select
   symbol,
   date,

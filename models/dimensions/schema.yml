@@ -27,4 +27,4 @@ models:
           - not_null
           - unique
       - name: sector
-        description: "Sector classification from synthetic fundamentals"
+        description: "Sector classification from test fundamentals"

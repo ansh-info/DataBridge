@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic volatility and risk metrics
+-- Staging model: test volatility and risk metrics
 select
   symbol,
   date,

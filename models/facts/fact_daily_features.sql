@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
--- Fact: daily static & synthetic features per stock symbol
+-- Fact: daily static & test features per stock symbol
 select
   f.symbol,
   f.date,

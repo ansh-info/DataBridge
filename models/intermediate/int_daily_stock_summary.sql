@@ -2,10 +2,10 @@
     materialized='view'
 ) }}
 
--- Intermediate model: daily OHLCV summary for mock real-time stock data
+-- Intermediate model: daily OHLCV summary for test real-time stock data
 with base as (
   select *
-  from {{ ref('stg_realtime_mock_stock_data') }}
+from {{ ref('stg_test_realtime_stock_data') }}
 ),
 windowed as (
   select

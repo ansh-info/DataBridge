@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic fundamental metrics for stocks
+-- Staging model: test fundamental metrics for stocks
 select
     symbol,
     date(date) as date,

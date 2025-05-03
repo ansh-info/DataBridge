@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic sentiment data for stocks
+-- Staging model: test sentiment data for stocks
 select
     symbol,
     date(date) as date,

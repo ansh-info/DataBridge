@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Intermediate model: synthetic VIX index data per date
+-- Intermediate model: test VIX index data per date
 select
   date,
   implied_volatility

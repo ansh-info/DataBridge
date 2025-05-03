@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic commodity price data
+-- Staging model: test commodity price data
 select
   commodity,
   date,

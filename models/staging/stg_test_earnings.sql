@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic earnings event data
+-- Staging model: test earnings event data
 select
   symbol,
   date,

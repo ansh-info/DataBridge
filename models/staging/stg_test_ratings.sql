@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic analyst rating data
+-- Staging model: test analyst rating data
 select
   symbol,
   date,

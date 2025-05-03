@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
--- Fact: intraday stock tick data (mocked real-time stream)
+-- Fact: intraday stock tick data (tested real-time stream)
 select
   symbol,
   timestamp,
@@ -10,4 +10,4 @@ select
   low,
   close,
   volume
-from {{ ref('stg_realtime_mock_stock_data') }}
+from {{ ref('stg_test_realtime_stock_data') }}

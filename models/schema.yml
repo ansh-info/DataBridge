@@ -67,15 +67,15 @@ models:
       - name: value
         description: "Indicator value"
 
-  - name: stg_realtime_mock_stock_data
-    description: "Staged mock real-time stock data from the mock pipeline"
+  - name: stg_test_realtime_stock_data
+    description: "Staged test real-time stock data from the test pipeline"
     columns:
       - name: symbol
         description: "Stock ticker symbol"
         tests:
           - not_null
       - name: timestamp
-        description: "Timestamp of the mock data point"
+        description: "Timestamp of the test data point"
         tests:
           - not_null
       - name: date
@@ -98,7 +98,7 @@ models:
         description: "Volume traded"
 
   - name: int_daily_stock_summary
-    description: "Daily OHLCV summary for each mock real-time stock symbol"
+    description: "Daily OHLCV summary for each test real-time stock symbol"
     tests:
       - unique_combination_of:
           combination_of: [symbol, date]

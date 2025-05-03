@@ -14,34 +14,34 @@ models:
       - name: last_volume
         description: "Latest volume traded from the streaming pipeline"
       - name: avg_eps
-        description: "Average EPS from synthetic fundamentals"
+        description: "Average EPS from test fundamentals"
       - name: avg_pe_ratio
-        description: "Average P/E ratio from synthetic fundamentals"
+        description: "Average P/E ratio from test fundamentals"
       - name: avg_market_cap
-        description: "Average market capitalization from synthetic fundamentals"
+        description: "Average market capitalization from test fundamentals"
       - name: avg_ma_10
-        description: "Average 10-day moving average from synthetic technical indicators"
+        description: "Average 10-day moving average from test technical indicators"
       - name: avg_ma_50
-        description: "Average 50-day moving average from synthetic technical indicators"
+        description: "Average 50-day moving average from test technical indicators"
       - name: avg_rsi
-        description: "Average RSI from synthetic technical indicators"
+        description: "Average RSI from test technical indicators"
       - name: avg_macd
-        description: "Average MACD from synthetic technical indicators"
+        description: "Average MACD from test technical indicators"
       - name: avg_bb_lower
-        description: "Average Bollinger Band lower from synthetic technical indicators"
+        description: "Average Bollinger Band lower from test technical indicators"
       - name: avg_bb_upper
-        description: "Average Bollinger Band upper from synthetic technical indicators"
+        description: "Average Bollinger Band upper from test technical indicators"
       - name: avg_sentiment_score
-        description: "Average sentiment score from synthetic sentiment"
+        description: "Average sentiment score from test sentiment"
       - name: avg_news_volume
-        description: "Average news volume from synthetic sentiment"
+        description: "Average news volume from test sentiment"
       - name: avg_twitter_mentions
-        description: "Average Twitter mentions from synthetic sentiment"
+        description: "Average Twitter mentions from test sentiment"
       - name: inflation_rate
-        description: "Latest synthetic inflation rate"
+        description: "Latest test inflation rate"
       - name: unemployment_rate
-        description: "Latest synthetic unemployment rate"
+        description: "Latest test unemployment rate"
       - name: gdp_growth
-        description: "Latest synthetic GDP growth rate"
+        description: "Latest test GDP growth rate"
       - name: interest_rate
-        description: "Latest synthetic interest rate"
+        description: "Latest test interest rate"

@@ -1,184 +1,113 @@
+#!/usr/bin/env python3
+"""
+Real-time stock data pipeline.
+Fetches the latest intraday data point for each symbol every 5 minutes
+and appends it to BigQuery.
+"""
 import os
 import sys
 import time
-from datetime import datetime, timedelta
-from pyspark.sql import SparkSession
-import pandas as pd
-from google.cloud import bigquery
+from datetime import datetime
 from dotenv import load_dotenv
+from pyspark.sql import SparkSession, Row
+from google.cloud import bigquery
+import pandas as pd
 
-# Setup environment
+# Configure Spark local IP (for macOS)
 os.environ["SPARK_LOCAL_IP"] = "127.0.0.1"
 
-# Setup path
+# Ensure project root is on Python path
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+# Project-specific imports
 from config.gcp_config import setup_gcp_auth
 from config.env_config import PROJECT_ID, DATASET_NAME
-from etl.alpha_vantage import fetch_intraday_data, parse_alpha_vantage_json
+from etl.alpha_vantage import fetch_intraday_data
 
-# Step 1: Auth
+# Step 1: Authentication and environment
 setup_gcp_auth()
-
-# Load environment variables to get stock symbols
 load_dotenv()
 STOCK_SYMBOLS = os.getenv("STOCK_SYMBOLS", "AAPL").split(",")
-print(f"[INFO] Configured to monitor the following stocks: {', '.join(STOCK_SYMBOLS)}")
+print(f"[INFO] Real-time pipeline symbols: {', '.join(STOCK_SYMBOLS)}")
 
-# Step 2: Spark session - simplified configuration
+# Step 2: Spark session for any DataFrame construction
 spark = (
-    SparkSession.builder.appName("StockDataStream")
+    SparkSession.builder.appName("RealTimeStockStream")
     .config(
         "spark.jars.packages",
-        "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.36.1",
+        ",".join([
+            "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.36.1",
+        ])
     )
     .config("spark.executor.userClassPathFirst", "true")
     .config("spark.driver.userClassPathFirst", "true")
     .getOrCreate()
 )
 
-
-def write_to_bigquery_direct(df, table_name, dataset, project):
+def generate_live_data(symbol):
     """
-    Write a Spark DataFrame to BigQuery using the BigQuery Python client.
+    Fetch the most recent intraday data point for a symbol using Alpha Vantage.
+    Returns a Spark DataFrame with a single row.
     """
-    try:
-        # Convert Spark DataFrame to Pandas
-        pandas_df = df.toPandas()
-        if pandas_df.empty:
-            print("[INFO] No new data to write to BigQuery")
-            return 0
+    data = fetch_intraday_data(symbol)
+    if not data or "Time Series (1min)" not in data:
+        raise RuntimeError(f"No time series data for {symbol}")
 
-        print(f"[INFO] Writing {len(pandas_df)} rows to BigQuery")
+    time_series = data["Time Series (1min)"]
+    # Get the latest timestamp
+    latest_ts = max(time_series.keys())
+    values = time_series[latest_ts]
+    ts = datetime.strptime(latest_ts, "%Y-%m-%d %H:%M:%S")
 
-        # Initialize BigQuery client
-        client = bigquery.Client(project=project)
+    row = Row(
+        symbol=symbol,
+        timestamp=ts,
+        open=float(values.get("1. open", 0)),
+        high=float(values.get("2. high", 0)),
+        low=float(values.get("3. low", 0)),
+        close=float(values.get("4. close", 0)),
+        volume=int(float(values.get("5. volume", 0))),
+    )
+    return spark.createDataFrame([row])
 
-        # Define table reference
-        table_id = f"{project}.{dataset}.{table_name}"
+def main():
+    # BigQuery client and settings
+    client = bigquery.Client(project=PROJECT_ID)
+    table_id = f"{PROJECT_ID}.{DATASET_NAME}.streaming_stock_data"
+    job_config = bigquery.LoadJobConfig(
+        schema=[
+            bigquery.SchemaField("symbol", "STRING"),
+            bigquery.SchemaField("timestamp", "TIMESTAMP"),
+            bigquery.SchemaField("open", "FLOAT"),
+            bigquery.SchemaField("high", "FLOAT"),
+            bigquery.SchemaField("low", "FLOAT"),
+            bigquery.SchemaField("close", "FLOAT"),
+            bigquery.SchemaField("volume", "INTEGER"),
+        ],
+        write_disposition="WRITE_APPEND",
+    )
 
-        # Configure the load job
-        job_config = bigquery.LoadJobConfig(
-            schema=[
-                bigquery.SchemaField("symbol", "STRING"),
-                bigquery.SchemaField("timestamp", "TIMESTAMP"),
-                bigquery.SchemaField("open", "FLOAT"),
-                bigquery.SchemaField("high", "FLOAT"),
-                bigquery.SchemaField("low", "FLOAT"),
-                bigquery.SchemaField("close", "FLOAT"),
-                bigquery.SchemaField("volume", "INTEGER"),
-            ],
-            write_disposition="WRITE_APPEND",
-        )
-
-        # Load the data
-        job = client.load_table_from_dataframe(
-            pandas_df, table_id, job_config=job_config
-        )
-        job.result()  # Wait for the job to complete
-
-        print(f"[SUCCESS] Loaded {len(pandas_df)} rows into {table_id}")
-        return len(pandas_df)
-
-    except Exception as e:
-        print(f"[ERROR] Failed to write to BigQuery: {e}")
-        print("[INFO] Saving data to CSV as fallback...")
-
-        # Save to CSV as a fallback
-        csv_path = f"{table_name}_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        df.toPandas().to_csv(csv_path, index=False)
-        print(f"[INFO] Data saved to {csv_path} for inspection")
-        return 0
-
-
-def filter_recent_data(df, minutes=5):
-    """
-    Filter the dataframe to only include records from the last N minutes.
-    """
-    from pyspark.sql.functions import col
-
-    # Calculate the cutoff time
-    cutoff_time = datetime.now() - timedelta(minutes=minutes)
-
-    # Filter the dataframe
-    filtered_df = df.filter(col("timestamp") >= cutoff_time)
-
-    return filtered_df
-
-
-def process_stock_data(symbol):
-    """
-    Process a single stock symbol.
-    Returns the number of records written to BigQuery.
-    """
-    try:
-        print(f"[INFO] Fetching real-time data for {symbol}...")
-        json_data = fetch_intraday_data(symbol)
-
-        if json_data and "Time Series (1min)" in json_data:
-            # Parse JSON into Spark DataFrame
-            df = parse_alpha_vantage_json(json_data, symbol, spark)
-
-            # Filter to get only the last 5 minutes of data
-            recent_df = filter_recent_data(df, minutes=5)
-
-            count_recent = recent_df.count()
-            print(
-                f"[INFO] Retrieved {df.count()} total records, filtered to {count_recent} recent records"
-            )
-
-            if count_recent > 0:
-                print("[INFO] Preview of recent data:")
-                recent_df.show(5)
-
-                # Write to BigQuery
-                return write_to_bigquery_direct(
-                    recent_df,
-                    table_name="streaming_stock_data",
-                    dataset=DATASET_NAME,
-                    project=PROJECT_ID,
+    print(f"[INFO] Starting real-time pipeline, writing to {table_id}")
+    while True:
+        for symbol in STOCK_SYMBOLS:
+            try:
+                df = generate_live_data(symbol)
+                pd_df = df.toPandas()
+                # Ensure volume is integer
+                pd_df["volume"] = pd_df["volume"].astype(int)
+                job = client.load_table_from_dataframe(
+                    pd_df, table_id, job_config=job_config
                 )
-            else:
-                print(f"[INFO] No recent data for {symbol} in the last 5 minutes")
-                return 0
-        else:
-            print(f"[WARN] Could not fetch time series data for {symbol}")
-            return 0
-
-    except RuntimeError as e:
-        print(f"[ERROR] {e}")
-        print(
-            "[INFO] Consider waiting for API rate limit to reset or adding more API keys."
-        )
-        return 0
-    except Exception as e:
-        print(f"[ERROR] An unexpected error occurred while processing {symbol}: {e}")
-        return 0
-
-
-def run_pipeline():
-    """
-    Main function to run the pipeline for all configured stocks.
-    """
-    total_records = 0
-    for symbol in STOCK_SYMBOLS:
-        try:
-            records = process_stock_data(symbol)
-            total_records += records
-
-            # Wait a bit between API calls to avoid rate limits
-            if symbol != STOCK_SYMBOLS[-1]:  # Don't wait after the last symbol
-                print(f"[INFO] Waiting 2 seconds before processing next stock...")
-                time.sleep(2)
-
-        except Exception as e:
-            print(f"[ERROR] Failed to process {symbol}: {e}")
-
-    print(f"[INFO] Pipeline run complete. Total records processed: {total_records}")
-
+                job.result()
+                print(
+                    f"[SUCCESS] Appended 1 row for {symbol} at {pd_df['timestamp'][0]}"
+                )
+            except Exception as e:
+                print(f"[ERROR] Failed to append for {symbol}: {e}")
+        print("[INFO] Sleeping for 5 minutes...")
+        time.sleep(5 * 60)
 
 if __name__ == "__main__":
-    print(f"[INFO] Starting stock data streaming pipeline at {datetime.now()}")
-    run_pipeline()
+    main()

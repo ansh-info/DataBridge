@@ -19,4 +19,5 @@ gunicorn
 py4j
 kagglehub
 kaggle
+confluent-kafka
 

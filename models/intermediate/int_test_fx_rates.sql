@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Intermediate model: synthetic FX rates per currency pair
+-- Intermediate model: test FX rates per currency pair
 select
   currency_pair,
   date,

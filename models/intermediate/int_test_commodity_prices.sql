@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Intermediate model: synthetic commodity prices per date
+-- Intermediate model: test commodity prices per date
 select
   commodity,
   date,

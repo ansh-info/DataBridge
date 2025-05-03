@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic dividend data
+-- Staging model: test dividend data
 select
   symbol,
   date,
