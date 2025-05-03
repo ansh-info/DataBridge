@@ -1,9 +1,74 @@
 services:
-  stock-pipeline:
-    build: .
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      # Broker and ZooKeeper connection
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Use PLAINTEXT listener for inter-container comms
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      # Ensure topics are auto-created when first produced-to or subscribed-to
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # Replication and partition defaults
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  test-producer:
+    image: python:3.12-slim
+    working_dir: /app
     volumes:
-      - ./logs:/app/logs
+      - .:/app
       - ./config:/app/config:ro
+      - ./logs:/app/logs
+    command: bash -c "apt-get update && apt-get install -y default-jre && pip install --no-cache-dir -r requirements.txt && python streaming/realtime_test_kafka_stream.py"
     env_file:
       - .env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC=realtime_stock_data
+    depends_on:
+      - kafka
     restart: unless-stopped
+
+  kafka-consumer:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+      - ./config:/app/config:ro
+    command: bash -c "apt-get update && apt-get install -y default-jre && pip install --no-cache-dir -r requirements.txt && python kafka_consumer/consumer.py"
+    env_file:
+      - .env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC=realtime_stock_data
+      - KAFKA_CONSUMER_GROUP=stock-data-consumer
+    depends_on:
+      - kafka
+    restart: unless-stopped
+
+  # stock-pipeline:
+  #   image: python:3.12-slim
+  #   working_dir: /app
+  #   volumes:
+  #     - .:/app
+  #     - ./config:/app/config:ro
+  #     - ./logs:/app/logs
+  #   env_file:
+  #     - .env
+  #   command: bash -c "apt-get update && apt-get install -y default-jre && pip install --no-cache-dir -r requirements.txt && python streaming/realtime_stock_stream.py"
+  #   restart: unless-stopped
