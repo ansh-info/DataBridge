@@ -40,6 +40,23 @@ def main():
         'group.id': group,
         'auto.offset.reset': 'earliest',
     }
+    # Create topic if it does not exist
+    try:
+        from confluent_kafka.admin import AdminClient, NewTopic
+        admin = AdminClient({'bootstrap.servers': bootstrap})
+        metadata = admin.list_topics(timeout=5)
+        if topic not in metadata.topics:
+            new_topic = NewTopic(topic, num_partitions=1, replication_factor=1)
+            fs = admin.create_topics([new_topic])
+            for t, f in fs.items():
+                try:
+                    f.result()
+                    print(f"[INFO] Created Kafka topic: {t}")
+                except Exception as e:
+                    print(f"[WARN] Topic {t} creation failed or already exists: {e}")
+    except Exception as e:
+        print(f"[ERROR] Failed to create topic via AdminClient: {e}")
+    # Instantiate and subscribe consumer
     consumer = Consumer(consumer_conf)
     consumer.subscribe([topic])
 
