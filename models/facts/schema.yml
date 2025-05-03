@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: fact_stock_tick
-    description: "Intraday stock tick data (mocked real-time stream)"
+    description: "Intraday stock tick data (tested real-time stream)"
     columns:
       - name: symbol
         description: "Stock ticker symbol"
@@ -33,7 +33,7 @@ models:
       - name: volume
 
   - name: fact_daily_features
-    description: "Daily static & synthetic features per stock symbol"
+    description: "Daily static & test features per stock symbol"
     columns:
       - name: symbol
       - name: date

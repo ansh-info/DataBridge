@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic S&P 500 index OHLCV data
+-- Staging model: test S&P 500 index OHLCV data
 select
   date,
   open,

@@ -12,7 +12,7 @@ with
     from (
       select *,
         row_number() over (partition by symbol order by timestamp desc) as rn
-      from {{ ref('stg_realtime_mock_stock_data') }}
+    from {{ ref('stg_test_realtime_stock_data') }}
     )
     where rn = 1
   ),

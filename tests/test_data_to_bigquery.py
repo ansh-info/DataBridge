@@ -60,9 +60,9 @@ spark = (
 )
 
 
-def generate_mock_stock_data(symbol, num_days=15, interval_minutes=5):
+def generate_test_stock_data(symbol, num_days=15, interval_minutes=5):
     """
-    Generate mock stock data at fixed intervals over the past N days.
+    Generate test stock data at fixed intervals over the past N days.
 
     Args:
         symbol (str): Stock symbol (e.g., 'AAPL')
@@ -70,9 +70,9 @@ def generate_mock_stock_data(symbol, num_days=15, interval_minutes=5):
         interval_minutes (int): Interval in minutes between data points
 
     Returns:
-        PySpark DataFrame with mock stock data
+        PySpark DataFrame with test stock data
     """
-    print(f"[INFO] Generating mock data for {symbol}: last {num_days} days @ {interval_minutes}-min intervals")
+    print(f"[INFO] Generating test data for {symbol}: last {num_days} days @ {interval_minutes}-min intervals")
     # End timestamp (rounded down to nearest interval)
     end_ts = datetime.now().replace(second=0, microsecond=0)
     minute_mod = end_ts.minute % interval_minutes
@@ -110,15 +110,15 @@ def generate_mock_stock_data(symbol, num_days=15, interval_minutes=5):
     return spark.createDataFrame(rows)
 
 
-# Step 3 & 4: Generate mock daily data for the past 15 days and write to BigQuery per stock
+# Step 3 & 4: Generate test daily data for the past 15 days and write to BigQuery per stock
 for symbol in STOCK_SYMBOLS:
-    df = generate_mock_stock_data(symbol, num_days=15, interval_minutes=5)  # 15 days of data at 5-min intervals
+    df = generate_test_stock_data(symbol, num_days=15, interval_minutes=5)  # 15 days of data at 5-min intervals
     # Split timestamp into separate date and time columns
     df = df.withColumn("date", to_date(col("timestamp"))) \
            .withColumn("time", date_format(col("timestamp"), "HH:mm:ss"))
 
     # Preview the data
-    print(f"[INFO] Preview of mock data for {symbol}:")
+    print(f"[INFO] Preview of test data for {symbol}:")
     df.show(5)
     df.printSchema()
 
@@ -128,7 +128,7 @@ for symbol in STOCK_SYMBOLS:
         print(f"[INFO] Successfully converted Spark DataFrame to Pandas ({len(pandas_df)} rows) for {symbol}")
 
         client = bigquery.Client(project=PROJECT_ID)
-        table_id = f"{PROJECT_ID}.{DATASET_NAME}.mock_stock_data"
+        table_id = f"{PROJECT_ID}.{DATASET_NAME}.test_stock_data"
         job_config = bigquery.LoadJobConfig(
             schema=[
                 bigquery.SchemaField("symbol", "STRING"),
@@ -153,6 +153,6 @@ for symbol in STOCK_SYMBOLS:
         print(f"[ERROR] Failed to write to BigQuery for {symbol}: {e}")
         print("[INFO] Saving data to CSV as fallback...")
 
-        csv_path = f"mock_stock_data_{symbol}.csv"
+        csv_path = f"test_stock_data_{symbol}.csv"
         df.toPandas().to_csv(csv_path, index=False)
         print(f"[INFO] Data saved to {csv_path} for inspection")

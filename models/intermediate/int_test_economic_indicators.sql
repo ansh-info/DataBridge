@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Intermediate: pick latest synthetic economic indicators snapshot
+-- Intermediate: pick latest test economic indicators snapshot
 with numbered as (
   select *,
     row_number() over (order by date desc) as rn

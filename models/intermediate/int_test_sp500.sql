@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Intermediate model: synthetic S&P 500 index daily OHLCV
+-- Intermediate model: test S&P 500 index daily OHLCV
 select
   date,
   open,

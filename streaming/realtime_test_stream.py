@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Mock real-time stock data pipeline.
-Generates a new data point every 5 minutes for each symbol and appends to BigQuery.
+Test real-time stock data pipeline.
+Generates a new test data point every 5 minutes for each symbol and appends to BigQuery.
 """
 import os
 import sys
@@ -40,7 +40,7 @@ price_state = {sym: 150.0 for sym in STOCK_SYMBOLS}
 
 # Build Spark session
 spark = (
-    SparkSession.builder.appName("MockRealtimeStockStream")
+    SparkSession.builder.appName("TestRealtimeStockStream")
     .config(
         "spark.jars.packages",
         ",".join([
@@ -53,9 +53,9 @@ spark = (
     .getOrCreate()
 )
 
-def generate_live_mock_data(symbol, interval_minutes=5):
+def generate_live_test_data(symbol, interval_minutes=5):
     """
-    Generate a single mock data point at the nearest past interval for a symbol.
+    Generate a single test data point at the nearest past interval for a symbol.
     """
     # Determine timestamp floor to interval
     now = datetime.now().replace(second=0, microsecond=0)
@@ -90,7 +90,7 @@ def generate_live_mock_data(symbol, interval_minutes=5):
 def main():
     # BigQuery settings
     client = bigquery.Client(project=PROJECT_ID)
-    table_id = f"{PROJECT_ID}.{DATASET_NAME}.realtime_mock_stock_data"
+    table_id = f"{PROJECT_ID}.{DATASET_NAME}.realtime_test_stock_data"
     job_config = bigquery.LoadJobConfig(
         schema=[
             bigquery.SchemaField("symbol", "STRING"),
@@ -105,12 +105,12 @@ def main():
         ],
         write_disposition="WRITE_APPEND",
     )
-    print(f"[INFO] Starting mock real-time pipeline, writing to {table_id}")
+    print(f"[INFO] Starting test real-time pipeline, writing to {table_id}")
     # Loop indefinitely
     while True:
         for symbol in STOCK_SYMBOLS:
             try:
-                df = generate_live_mock_data(symbol)
+                df = generate_live_test_data(symbol)
                 pd_df = df.toPandas()
                 job = client.load_table_from_dataframe(pd_df, table_id, job_config=job_config)
                 job.result()

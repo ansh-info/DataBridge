@@ -2,7 +2,7 @@
     materialized='table'
 ) }}
 
--- Fact table: synthetic commodity prices per date
+-- Fact table: test commodity prices per date
 select
   commodity,
   date,

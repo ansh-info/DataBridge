@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic VIX implied volatility index data
+-- Staging model: test VIX implied volatility index data
 select
   date,
   implied_volatility

@@ -2,7 +2,7 @@
     materialized='view'
 ) }}
 
--- Staging model: synthetic technical indicators for stocks
+-- Staging model: test technical indicators for stocks
 select
     symbol,
     date(date) as date,

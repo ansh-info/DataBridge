@@ -2,7 +2,7 @@
     materialized='table'
 ) }}
 
--- Fact table: synthetic FX rates per currency pair and date
+-- Fact table: test FX rates per currency pair and date
 select
   currency_pair,
   date,

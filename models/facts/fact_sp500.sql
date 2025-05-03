@@ -2,7 +2,7 @@
     materialized='table'
 ) }}
 
--- Fact table: synthetic S&P 500 index data per date
+-- Fact table: test S&P 500 index data per date
 select
   date,
   open,
