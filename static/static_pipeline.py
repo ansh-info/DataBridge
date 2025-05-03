@@ -128,4 +128,12 @@ def write_to_bigquery(df, table_name: str) -> int:
         .save()
     count = df.count()
     print(f"[SUCCESS] Wrote {count} rows to {destination}")
+    # Save to Parquet if path provided
+    parquet_path = os.getenv("PARQUET_OUTPUT_PATH")
+    if parquet_path:
+        try:
+            df.write.mode("append").parquet(f"{parquet_path.rstrip('/')}/{table_name}")
+            print(f"[INFO] Wrote {count} rows to Parquet at {parquet_path.rstrip('/')}/{table_name}")
+        except Exception as e:
+            print(f"[ERROR] Failed to write Parquet for {table_name}: {e}")
     return count

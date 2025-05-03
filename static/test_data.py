@@ -313,6 +313,16 @@ def load_to_bq(df, table_name, truncate=True):
     job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
     job.result()
     print(f"[INFO] Loaded {len(df)} rows into {table_id}")
+    # Save to Parquet if path provided
+    parquet_path = os.getenv("PARQUET_OUTPUT_PATH")
+    if parquet_path:
+        os.makedirs(parquet_path, exist_ok=True)
+        dest_file = os.path.join(parquet_path, f"{table_name}.parquet")
+        try:
+            df.to_parquet(dest_file, index=False)
+            print(f"[INFO] Wrote {len(df)} rows to Parquet at {dest_file}")
+        except Exception as e:
+            print(f"[ERROR] Failed to write Parquet for {table_name}: {e}")
 
 
 def run_pipeline(days: int = 30):
