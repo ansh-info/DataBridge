@@ -134,6 +134,8 @@ dbt test
 
 Models live under `models/` with `staging/`, `intermediate/`, and `marts/`.
 
+![dbt-diagram](images/dbt_lineage.png)
+
 ## Airflow (Optional)
 
 DAG definitions reside in `airflow/dags/`. To run Airflow locally:
