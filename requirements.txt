@@ -4,6 +4,7 @@ numpy
 google-cloud-bigquery
 google-cloud-storage
 google-auth
+dbt
 requests
 python-dotenv
 pandas-gbq
