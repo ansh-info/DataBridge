@@ -15,6 +15,14 @@ Many financial data workflows today separate batch and real-time processes, lack
 - Containerized local development and deployment via Docker Compose (Kafka, Python services)
 - Comprehensive testing suite with pytest for pipeline validation
 
+<p align="center">
+  <a href="https://youtu.be/BXZvJIVycHE" target="_blank">
+    <img src="https://img.youtube.com/vi/BXZvJIVycHE/maxresdefault.jpg" alt="Watch the video" width="640" style="border-radius:12px;" />
+  </a>
+  <br />
+  <a href="https://youtu.be/BXZvJIVycHE" target="_blank"> -> Click to watch the demo video on YouTube</a>
+</p>
+
 ## Prerequisites
 
 - Python 3.12
