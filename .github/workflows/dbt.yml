@@ -1,0 +1,33 @@
+name: dbt
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  dbt-compile:
+    name: DBT Compile & Docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: DBT version
+        run: dbt --version
+      - name: DBT deps
+        run: dbt deps
+      - name: DBT compile
+        run: dbt compile
+      - name: DBT docs generate
+        run: dbt docs generate
